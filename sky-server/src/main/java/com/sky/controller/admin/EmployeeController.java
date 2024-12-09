@@ -1,6 +1,7 @@
 package com.sky.controller.admin;
 
 import com.sky.constant.JwtClaimsConstant;
+import com.sky.dto.EmployeeDTO;
 import com.sky.dto.EmployeeLoginDTO;
 import com.sky.entity.Employee;
 import com.sky.properties.JwtProperties;
@@ -8,6 +9,8 @@ import com.sky.result.Result;
 import com.sky.service.EmployeeService;
 import com.sky.utils.JwtUtil;
 import com.sky.vo.EmployeeLoginVO;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,11 +22,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 员工管理
+ * Employee mkanagement
  */
 @RestController
 @RequestMapping("/admin/employee")
 @Slf4j
+@Api(tags = "Employee related interfaces")
 public class EmployeeController {
 
     @Autowired
@@ -32,18 +36,19 @@ public class EmployeeController {
     private JwtProperties jwtProperties;
 
     /**
-     * 登录
+     * login
      *
      * @param employeeLoginDTO
      * @return
      */
     @PostMapping("/login")
+    @ApiOperation(value = "login")
     public Result<EmployeeLoginVO> login(@RequestBody EmployeeLoginDTO employeeLoginDTO) {
-        log.info("员工登录：{}", employeeLoginDTO);
+        log.info("Staff Login：{}", employeeLoginDTO);
 
         Employee employee = employeeService.login(employeeLoginDTO);
 
-        //登录成功后，生成jwt令牌
+        //After successful login, a jwt token is generated
         Map<String, Object> claims = new HashMap<>();
         claims.put(JwtClaimsConstant.EMP_ID, employee.getId());
         String token = JwtUtil.createJWT(
@@ -51,6 +56,7 @@ public class EmployeeController {
                 jwtProperties.getAdminTtl(),
                 claims);
 
+        //Use the build method to build an object (Add @Build annotation to vo object)
         EmployeeLoginVO employeeLoginVO = EmployeeLoginVO.builder()
                 .id(employee.getId())
                 .userName(employee.getUsername())
@@ -62,13 +68,24 @@ public class EmployeeController {
     }
 
     /**
-     * 退出
+     * quit
      *
      * @return
      */
     @PostMapping("/logout")
+    @ApiOperation("exit")
     public Result<String> logout() {
         return Result.success();
     }
 
+    /**
+     * New employees
+     */
+    @PostMapping
+    @ApiOperation("new employee")
+    public Result save(@RequestBody EmployeeDTO employeeDTO){
+        log.info("新增员工：{}",employeeDTO);
+        employeeService.save(employeeDTO);
+        return Result.success();
+    }
 }

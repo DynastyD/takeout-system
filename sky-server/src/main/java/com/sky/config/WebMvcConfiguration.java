@@ -31,22 +31,22 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
      * @param registry
      */
     protected void addInterceptors(InterceptorRegistry registry) {
-        log.info("开始注册自定义拦截器...");
+        log.info("Start registering custom interceptors...");
         registry.addInterceptor(jwtTokenAdminInterceptor)
                 .addPathPatterns("/admin/**")
                 .excludePathPatterns("/admin/employee/login");
     }
 
     /**
-     * 通过knife4j生成接口文档
+     * Generate interface documentation through knife4j
      * @return
      */
     @Bean
     public Docket docket() {
         ApiInfo apiInfo = new ApiInfoBuilder()
-                .title("苍穹外卖项目接口文档")
+                .title("Takeaway Project Interface Documentation")
                 .version("2.0")
-                .description("苍穹外卖项目接口文档")
+                .description("Takeaway Project Interface Documentation")
                 .build();
         Docket docket = new Docket(DocumentationType.SWAGGER_2)
                 .apiInfo(apiInfo)
@@ -58,7 +58,7 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
     }
 
     /**
-     * 设置静态资源映射
+     * Setting up static resource mapping
      * @param registry
      */
     protected void addResourceHandlers(ResourceHandlerRegistry registry) {
