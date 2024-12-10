@@ -95,4 +95,11 @@ public class EmployeeController {
         PageResult pageResult = employeeService.pageQuery(employeePageQueryDTO);
         return Result.success(pageResult);
     }
+    @PostMapping("/status/{status}")
+    @ApiOperation("Enable or disable staff accounts")
+    public Result startOrStop(@PathVariable Integer status, long id){
+        log.info("Enable or disable staff accounts: {},{}", status,id);
+        employeeService.startOrStop(status,id);
+        return Result.success();
+    }
 }
