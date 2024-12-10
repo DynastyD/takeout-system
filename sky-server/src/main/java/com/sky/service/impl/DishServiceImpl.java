@@ -94,11 +94,17 @@ public class DishServiceImpl implements DishService {
             throw  new DeletionNotAllowedException(MessageConstant.DISH_BE_RELATED_BY_SETMEAL);
         }
         //Delete dish data in dishTable
-        for (Long id : ids) {
-            dishMapper.deleteById(id);
-            //Delete the flavor data associated with a dish
-            dishFlavorMapper.deleteByDishId(id);
-        }
+//        for (Long id : ids) {
+//            dishMapper.deleteById(id);
+//            //Delete the flavor data associated with a dish
+//            dishFlavorMapper.deleteByDishId(id);
+//        }
 
+        //Batch delete the number of dishes according to the dish ID set
+        //sql: delete from dish where id in (?,?,?)
+        dishMapper.deleteByIds(ids);
+        //Batch delete the associated flavor data according to the dish ID set
+        //sql: delete from dish_flavor where dish_id in (?,?,?)
+        dishFlavorMapper.deleteByDishIds(ids);
     }
 }
