@@ -54,9 +54,27 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
                 .description("Takeaway Project Interface Documentation")
                 .build();
         Docket docket = new Docket(DocumentationType.SWAGGER_2)
+                .groupName("Client interface")
                 .apiInfo(apiInfo)
                 .select()
-                .apis(RequestHandlerSelectors.basePackage("com.sky.controller"))
+                .apis(RequestHandlerSelectors.basePackage("com.sky.controller.admin"))
+                .paths(PathSelectors.any())
+                .build();
+        return docket;
+    }
+
+    @Bean
+    public Docket docket1() {
+        ApiInfo apiInfo = new ApiInfoBuilder()
+                .title("Takeaway Project Interface Documentation")
+                .version("2.0")
+                .description("Takeaway Project Interface Documentation")
+                .build();
+        Docket docket = new Docket(DocumentationType.SWAGGER_2)
+                .groupName("Customer interface")
+                .apiInfo(apiInfo)
+                .select()
+                .apis(RequestHandlerSelectors.basePackage("com.sky.controller.user"))
                 .paths(PathSelectors.any())
                 .build();
         return docket;
