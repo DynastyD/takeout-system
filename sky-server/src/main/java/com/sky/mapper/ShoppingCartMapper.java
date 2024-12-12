@@ -8,13 +8,7 @@ import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 
-/**
- * @ClassName: ShoppingCartMapper
- * @Package:com.sky.mapper
- * @Description:
- * @author: Zihao
- * @date: 2024/12/12 - 17:34
- */
+
 @Mapper
 public interface ShoppingCartMapper {
 
