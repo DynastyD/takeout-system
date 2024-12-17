@@ -1,5 +1,6 @@
 package com.sky.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
@@ -18,6 +19,7 @@ import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderVO;
+import com.sky.websocket.WebSocketServer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +30,9 @@ import org.springframework.util.CollectionUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,10 +54,10 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private UserMapper userMapper;
 
-    @Autowired
-    private WeChatPayUtil weChatPayUtil;
-
     private Orders orders;
+
+    @Autowired
+    private WebSocketServer webSocketServer;
 
 
     @Override
@@ -132,6 +136,16 @@ public class OrderServiceImpl implements OrderService {
         Integer OrderPaidStatus = Orders.PAID;
         LocalDateTime check_out_time = LocalDateTime.now();
         orderMapper.updateStatus(OrderStatus, OrderPaidStatus, check_out_time, this.orders.getId());
+
+
+
+        Map hashMap = new HashMap();
+        hashMap.put("type",1); //1 means order reminder, 2 means customer urging order
+        hashMap.put("orderId",this.orders.getId());
+        hashMap.put("content","Order number: " + this.orders.getNumber());
+        String json = JSON.toJSONString(hashMap);
+        webSocketServer.sendToAllClient(json);
+
         return vo;
 
     }
@@ -151,6 +165,18 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         orderMapper.update(orders);
+
+//        //Push messages to client browsers via websocket : type, orderId, content
+//        HashMap hashMap = new HashMap();
+//        hashMap.put("type",1); //1 means order reminder, 2 means customer urging order
+//        hashMap.put("orderId",this.orders.getId());
+//        hashMap.put("content","Order number: " + this.orders.getNumber());
+//
+//        //map to json
+//        String json = JSON.toJSONString(hashMap);
+//        webSocketServer.sendToAllClient(json);
+
+
     }
 
     @Override
@@ -165,10 +191,10 @@ public class OrderServiceImpl implements OrderService {
         //Paging condition query
         Page<Orders> page =  orderMapper.pageQuery(ordersPageQueryDTO);
 
-        ArrayList list = new ArrayList();
+        List<OrderVO> list = new ArrayList();
         if (page != null && page.getTotal() > 0){
-            for (Orders order : page) {
-                Long orderId = order.getId();
+            for (Orders orders : page) {
+                Long orderId = orders.getId();
                 List<OrderDetail> orderDetails = orderDetailMapper.getByOrderId(orderId);
 
                 OrderVO orderVO = new OrderVO();
@@ -210,11 +236,11 @@ public class OrderServiceImpl implements OrderService {
 
         //The order is cancelled while it is in the pending order status and a refund is required
         if (ordersDB.getStatus().equals(Orders.TO_BE_CONFIRMED)){
-            weChatPayUtil.refund(
-                    ordersDB.getNumber(), //Merchant order number
-                    ordersDB.getNumber(), //Merchant refund order number
-                    new BigDecimal(0.01),//Refund amount, unit: RMB
-                    new BigDecimal(0.01));//Original order amount
+//            weChatPayUtil.refund(
+//                    ordersDB.getNumber(), //Merchant order number
+//                    ordersDB.getNumber(), //Merchant refund order number
+//                    new BigDecimal(0.01),//Refund amount, unit: RMB
+//                    new BigDecimal(0.01));//Original order amount
 
             orders.setPayStatus(Orders.REFUND);
         }
@@ -316,8 +342,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public void confirm(OrdersConfirmDTO ordersConfirmDTO) {
-        Orders orders = Orders.builder().id(ordersConfirmDTO.getId())
-                .status(ordersConfirmDTO.getStatus())
+        Orders orders = Orders.builder()
+                .id(ordersConfirmDTO.getId())
+                .status(Orders.CONFIRMED)
                 .build();
 
         orderMapper.update(orders);
@@ -331,15 +358,16 @@ public class OrderServiceImpl implements OrderService {
             throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
         }
 
-        Integer payStatus = ordersDB.getPayStatus();
-        if (payStatus == Orders.PAID){
-            String refund = weChatPayUtil.refund(
-                    ordersDB.getNumber(),
-                    ordersDB.getNumber(),
-                    new BigDecimal(0.01),
-                    new BigDecimal(0.01));
-            log.info("Request a Refund：{}", refund);
-        }
+//        Integer payStatus = ordersDB.getPayStatus();
+//        if (payStatus == Orders.PAID){
+//            String refund = weChatPayUtil.refund(
+//                    ordersDB.getNumber(),
+//                    ordersDB.getNumber(),
+//                    new BigDecimal(0.01),
+//                    new BigDecimal(0.01));
+//            log.info("Request a Refund：{}", refund);
+//        }
+
         //If the order is rejected and a refund is required, the order status, rejection reason, and cancellation time will be updated according to the order ID.
         Orders orders = new Orders();
         orders.setId(ordersDB.getId());
@@ -354,14 +382,14 @@ public class OrderServiceImpl implements OrderService {
     public void cancel(OrdersCancelDTO ordersCancelDTO) throws Exception {
         Orders ordersDB = orderMapper.getById(ordersCancelDTO.getId());
         Integer payStatus = ordersDB.getPayStatus();
-        if (payStatus == 1){
-            String refund = weChatPayUtil.refund(
-                    ordersDB.getNumber(),
-                    ordersDB.getNumber(),
-                    new BigDecimal(0.01),
-                    new BigDecimal(0.01));
-            log.info("申请退款：{}", refund);
-        }
+//        if (payStatus == 1){
+//            String refund = weChatPayUtil.refund(
+//                    ordersDB.getNumber(),
+//                    ordersDB.getNumber(),
+//                    new BigDecimal(0.01),
+//                    new BigDecimal(0.01));
+//            log.info("申请退款：{}", refund);
+//        }
         Orders orders = new Orders();
         orders.setId(ordersCancelDTO.getId());
         orders.setStatus(Orders.CANCELLED);
@@ -399,6 +427,23 @@ public class OrderServiceImpl implements OrderService {
         orders.setDeliveryTime(LocalDateTime.now());
 
         orderMapper.update(orders);
+    }
+
+    @Override
+    public void reminder(Long id) {
+        Orders ordersDB = orderMapper.getById(id);
+
+        if (ordersDB == null){
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        Map map = new HashMap();
+        map.put("type", 2);
+        map.put("orderId", id);
+        map.put("content","order number: " + ordersDB.getNumber());
+
+
+        webSocketServer.sendToAllClient(JSON.toJSONString(map));
     }
 
 }

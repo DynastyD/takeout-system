@@ -46,7 +46,7 @@ public class OrderController {
         return Result.success(orderPaymentVO);
     }
 
-    @GetMapping("/historyOrder")
+    @GetMapping("/historyOrders")
     @ApiOperation("Historical order query")
     public Result<PageResult> page(int page, int pageSize, Integer status){
       PageResult pageResult = orderService.pageQuery4User(page, pageSize, status);
@@ -72,6 +72,13 @@ public class OrderController {
     @ApiOperation("One more order")
     public Result repetition(@PathVariable Long id){
         orderService.repetition(id);
+        return Result.success();
+    }
+
+    @GetMapping("/reminder/{id}")
+    @ApiOperation("Customer reminder")
+    public Result reminder(@PathVariable("id") Long id){
+        orderService.reminder(id);
         return Result.success();
     }
 }
